@@ -27,38 +27,56 @@ public class ExportSplatMap : MonoBehaviour
 		
 
 	public string submitURL = "localhost:8888/shub1Env-test/decode.php";		// the receiving page on the server
+	public string getURL =  "localhost:8888/shub1Env-test/encode.php";		// the returning page on the server
 
 //	public 	test mytest = new test(10);		// create new class and make sue of the consutctor line to pass paramater  NB doesn't seem to be wokring
 
 
 
 	// findme ref: based on https://docs.unity3d.com/ScriptReference/WWWForm.html
-
-	IEnumerator UploadJSON(string type, string format, string json, string terrainID) {
-
-		// create form with named key-val pairs for $_post
+	IEnumerator TransmitJson(string url, string type, string format, string data, string terrainID) {
 
 		// findme todo: add routines for handling different data types
+		// create form with named key-val pairs for $_post
 		WWWForm form = new WWWForm();
-		form.AddField("type", "trees");
-		form.AddField("format", "json");
-		form.AddField("data", json);
+		form.AddField("type", type);
+		form.AddField("format", format);
+		form.AddField("data", data);
 		form.AddField("terrainID",terrainID);	//ID of the terrain in the database
 
 		// use for heightmap/splatmap/zip		form.AddBinaryData("fileUpload", bytes, "screenShot.png", "image/png");
 
 
-		WWW w = new WWW(submitURL, form);
-		yield return w;
-		if (!string.IsNullOrEmpty(w.error)) {
-			print(w.error);
+		WWW transferData = new WWW(url, form);
+		print ("transfering");
+
+		yield return transferData;
+		print (transferData.text);
+
+
+		if (!string.IsNullOrEmpty(transferData.error)) {
+			print ("transfering");
+			print(transferData.error);
 		}
 		else {
-			print("Finished Uploading Data " + json);
+			print (transferData.text);
 		}
 
 	}
 
+
+
+
+
+
+
+	public void downloadTrees (){
+
+		print ("start downloading");
+		StartCoroutine(TransmitJson(getURL, "trees","json", "", terrain.name));
+
+
+	}
 
 
 	// wrap a json string of arrays in [] to make 1 json array
@@ -67,16 +85,12 @@ public class ExportSplatMap : MonoBehaviour
 		return json;
 	}
 
+
+	// upload tree data
 	public void uploadTrees()
 	{
-		//		print ("splat layers " + terrain.terrainData.alphamapLayers);
 		treeArray = new ArrayList(terrain.terrainData.treeInstances);
 		TreeInstance[] trees = terrain.terrainData.treeInstances;
-
-
-		print ("treearray count " + trees.Length );
-		//	print ("tree instance count " + t.terrainData.treeInstanceCount);
-
 
 		string jsontrees = "";										// initialise tree data string
 
@@ -104,9 +118,6 @@ public class ExportSplatMap : MonoBehaviour
 				jsontrees = jsontrees + ",";														// add a comma after any entry that isn't the last entry
 			}
 		}
-		
-
-
 
 		print("json trees " + wrapJson(jsontrees) );
 
@@ -118,19 +129,19 @@ public class ExportSplatMap : MonoBehaviour
 
 		// create form object with data to upload.
 
-		StartCoroutine(UploadJSON("trees","json", wrapJson(jsontrees), terrain.name));
-
-		System.IO.File.WriteAllText ("/Users/hairyfreak/Desktop/trees.txt", wrapJson(jsontrees));
+		StartCoroutine(TransmitJson(submitURL, "trees","json", wrapJson(jsontrees), terrain.name));
 
 
 	}
 
 
+		
 
 
 	public void uploadSplat()
 	{
-		
+		//		print ("splat layers " + terrain.terrainData.alphamapLayers);
+
 
 		//  GetDetailLayer(int xBase, int yBase, int width, int height, int layer);
 		// in otherwords get detail layer from 0,0  layer id (see editor list order)
